@@ -91,6 +91,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return START
 
 async def exit_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        await update.message.delete()
+    except Exception as e:
+        pass  # иногда нет прав или сообщение уже удалено
     await update.message.reply_text("Бот завершил работу, история очищена.", reply_markup=ReplyKeyboardRemove())
     clear_all()
     return ConversationHandler.END
