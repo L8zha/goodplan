@@ -92,9 +92,11 @@ async def send_and_track(update, context, *args, **kwargs):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_and_track(
-        "Нажмите 'Старт' для начала",
-        reply_markup=ReplyKeyboardMarkup([["Старт"], ["Выход"]], resize_keyboard=True)
-    )
+    update,
+    context,
+    "Нажмите 'Старт' для начала",
+    reply_markup=ReplyKeyboardMarkup([["Старт"], ["Выход"]], resize_keyboard=True)
+)
     return START
 
 async def exit_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
