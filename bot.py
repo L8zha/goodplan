@@ -110,7 +110,7 @@ def main():
                 MessageHandler(filters.Regex("^Выход$"), exit_handler),
             ],
             EDIT_CHOOSE_ITEM: [
-                MessageHandler(filters.Regex("^\d+$"), edit_choose_item),
+                MessageHandler(filters.Regex(r"^\d+$"), edit_choose_item),
                 MessageHandler(filters.Regex("^Выход$"), exit_handler),
             ],
             EDIT_INPUT: [

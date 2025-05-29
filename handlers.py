@@ -9,7 +9,7 @@ from telegram.ext import ContextTypes, ConversationHandler
     ADD_ADDRESS_NAME, ADD_ADDRESS_ADR, ADD_ADDRESS_MAP,
     VIEW_CATEGORY, VIEW_FOOD_TYPE, VIEW_ADDRESS_PEOPLE, VIEW_ADDRESS_PERSON,
     EDIT_CATEGORY, EDIT_FOOD_TYPE, EDIT_CHOOSE_ITEM, EDIT_INPUT,
-) = range(20)
+) = range(22)
 
 FOOD_TYPES = ["Завтраки", "Обеды", "Ужины", "Перекусить"]
 CATEGORIES = ["Еда", "Развлечения", "Отели", "Адреса"]
