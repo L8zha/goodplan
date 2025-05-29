@@ -25,7 +25,7 @@ from handlers import (
 ) = range(22)
 
 def main():
-    application = ApplicationBuilder().token("YOUR_TOKEN_HERE").build()
+    application = ApplicationBuilder().token("7178929219:AAFXr4KOlPUUHBYxXTnTzF5iNG7t2s4AIM0").build()
 
     conv_handler = ConversationHandler(
         entry_points=[
