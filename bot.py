@@ -12,8 +12,9 @@ from handlers import (
     add_fun_place_name, add_fun_place_map, add_hotel_name, add_hotel_address, add_hotel_map,
     add_address_name, add_address_adr, add_address_map,
     to_view_menu, view_category, view_food_type, view_address_people,
-    to_edit_menu, edit_category, edit_food_type, edit_choose_item, edit_input,
-    back_to_main, to_add_menu, add_category, add_food_type, add_food_place_name, add_fun_place_name, add_hotel_name, add_address_name,
+    to_edit_menu, edit_category, edit_food_type, edit_choose_item,
+    back_to_main, to_add_menu, add_category, add_food_type, add_food_place_name, 
+    add_fun_place_name, add_hotel_name, add_address_name, edit_choose_field, edit_update_name, edit_update_address, edit_done,
 )
 from dotenv import load_dotenv
 
@@ -23,8 +24,9 @@ from dotenv import load_dotenv
     ADD_HOTEL_NAME, ADD_HOTEL_ADDRESS, ADD_HOTEL_MAP,
     ADD_ADDRESS_NAME, ADD_ADDRESS_ADR, ADD_ADDRESS_MAP,
     VIEW_CATEGORY, VIEW_FOOD_TYPE, VIEW_ADDRESS_PEOPLE, VIEW_ADDRESS_PERSON,
-    EDIT_CATEGORY, EDIT_FOOD_TYPE, EDIT_CHOOSE_ITEM, EDIT_INPUT,
-) = range(22)
+    EDIT_CATEGORY, EDIT_FOOD_TYPE, EDIT_CHOOSE_ITEM, EDIT_CHOOSE_FIELD,
+    EDIT_UPDATE_NAME, EDIT_UPDATE_ADDRESS, EDIT_DONE
+) = range(25)
 
 def main():
     load_dotenv()  # Загрузка переменных из .env
@@ -121,10 +123,21 @@ def main():
                 MessageHandler(filters.Regex("^Назад$"), edit_category),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, edit_choose_item),
             ],
-            EDIT_INPUT: [
-                MessageHandler(filters.Regex("^Назад$"), edit_category),
-                MessageHandler(filters.TEXT & ~filters.COMMAND, edit_input),
+            EDIT_CHOOSE_FIELD: [
+                MessageHandler(filters.Regex("^Назад$"), edit_choose_item),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, edit_choose_field),
             ],
+            EDIT_UPDATE_NAME: [
+                MessageHandler(filters.Regex("^Назад$"), edit_choose_field),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, edit_update_name),
+            ],
+            EDIT_UPDATE_ADDRESS: [
+                MessageHandler(filters.Regex("^Назад$"), edit_choose_field),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, edit_update_address),
+            ],
+            EDIT_DONE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, edit_done),
+            ]
         },
         fallbacks=[
             CommandHandler("start", start),
