@@ -84,7 +84,6 @@ def with_exit(keyboard):
     return keyboard + EXIT_BUTTON
 
 async def send_and_track(update, context, *args, **kwargs):
-    # Отправляет сообщение и сохраняет его message_id для последующего удаления
     sent = await update.message.reply_text(*args, **kwargs)
     bot_msgs = context.user_data.setdefault("bot_messages", [])
     bot_msgs.append(sent.message_id)
@@ -104,7 +103,7 @@ async def exit_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=msg_id)
         except Exception:
-            pass  # уже удалено или нет прав
+            pass
     context.user_data["bot_messages"] = []
     await send_and_track(
         update, context,
@@ -185,9 +184,10 @@ async def add_food_place_map(update: Update, context: ContextTypes.DEFAULT_TYPE)
     address = ""  # адреса нет отдельно
     save_place(cat, subcat, name, address, map_url)
     await send_and_track(
-        update, context, "Добавлено!", reply_markup=ReplyKeyboardMarkup(with_exit([CATEGORIES]), resize_keyboard=True)
+        update, context, "Добавлено!",
+        reply_markup=ReplyKeyboardMarkup([["Старт"], ["Выход"]], resize_keyboard=True)
     )
-    return ADD_CATEGORY
+    return START
 
 async def add_fun_place_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["add_name"] = update.message.text
@@ -204,9 +204,10 @@ async def add_fun_place_map(update: Update, context: ContextTypes.DEFAULT_TYPE):
         map_url = update.message.text
     save_place("Развлечения", None, context.user_data["add_name"], "", map_url)
     await send_and_track(
-        update, context, "Добавлено!", reply_markup=ReplyKeyboardMarkup(with_exit([CATEGORIES]), resize_keyboard=True)
+        update, context, "Добавлено!",
+        reply_markup=ReplyKeyboardMarkup([["Старт"], ["Выход"]], resize_keyboard=True)
     )
-    return ADD_CATEGORY
+    return START
 
 async def add_hotel_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["add_name"] = update.message.text
@@ -229,9 +230,10 @@ async def add_hotel_map(update: Update, context: ContextTypes.DEFAULT_TYPE):
         map_url = update.message.text
     save_place("Отели", None, context.user_data["add_name"], context.user_data["add_address"], map_url)
     await send_and_track(
-        update, context, "Добавлено!", reply_markup=ReplyKeyboardMarkup(with_exit([CATEGORIES]), resize_keyboard=True)
+        update, context, "Добавлено!",
+        reply_markup=ReplyKeyboardMarkup([["Старт"], ["Выход"]], resize_keyboard=True)
     )
-    return ADD_CATEGORY
+    return START
 
 async def add_address_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["person"] = update.message.text
@@ -254,9 +256,10 @@ async def add_address_map(update: Update, context: ContextTypes.DEFAULT_TYPE):
         map_url = update.message.text
     save_place("Адреса", None, "", context.user_data["add_address"], map_url, context.user_data["person"])
     await send_and_track(
-        update, context, "Добавлено!", reply_markup=ReplyKeyboardMarkup(with_exit([CATEGORIES]), resize_keyboard=True)
+        update, context, "Добавлено!",
+        reply_markup=ReplyKeyboardMarkup([["Старт"], ["Выход"]], resize_keyboard=True)
     )
-    return ADD_CATEGORY
+    return START
 
 async def to_view_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_and_track(
