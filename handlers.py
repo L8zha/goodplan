@@ -91,12 +91,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return START
 
 async def exit_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        await update.message.delete()
-    except Exception as e:
-        pass  # иногда нет прав или сообщение уже удалено
-    await update.message.reply_text("Бот завершил работу, история очищена.", reply_markup=ReplyKeyboardRemove())
-    clear_all()
+    bot_msgs = context.user_data.get("bot_messages", [])
+    for msg_id in bot_msgs:
+        try:
+            await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=msg_id)
+        except Exception:
+            pass  # уже удалено или нет прав
+    # (по желанию, очистить список для следующей сессии)
+    context.user_data["bot_messages"] = []
+    await update.message.reply_text(
+        "Вы вышли из режима. Для возврата используйте /start.",
+        reply_markup=ReplyKeyboardRemove()
+    )
     return ConversationHandler.END
 
 async def on_start_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
