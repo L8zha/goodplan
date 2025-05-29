@@ -19,7 +19,7 @@ from handlers import (
 )
 
 def main():
-    app = Application.builder().token("ВАШ_ТОКЕН").build()
+    app = Application.builder().token("7178929219:AAFXr4KOlPUUHBYxXTnTzF5iNG7t2s4AIM0").build()
 
     conv = ConversationHandler(
         entry_points=[
