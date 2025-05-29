@@ -83,6 +83,13 @@ EXIT_BUTTON = [["Выход"]]
 def with_exit(keyboard):
     return keyboard + EXIT_BUTTON
 
+async def send_and_track(update, context, *args, **kwargs):
+    """Отправляет сообщение и сохраняет его id в context.user_data['bot_messages']"""
+    sent = await update.message.reply_text(*args, **kwargs)
+    bot_msgs = context.user_data.setdefault("bot_messages", [])
+    bot_msgs.append(sent.message_id)
+    return sent
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "Нажмите 'Старт' для начала",
