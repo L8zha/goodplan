@@ -2,7 +2,7 @@ from telegram.ext import (
     Application, CommandHandler, MessageHandler, ConversationHandler, filters
 )
 from handlers import (
-    start, exit_handler, on_start_button,
+    start, exit_handler,
     to_add_menu, add_category, add_food_type,
     add_food_place_name, add_food_place_map,
     add_fun_place_name, add_fun_place_map,
