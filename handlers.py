@@ -1,5 +1,5 @@
 import sqlite3
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply
 from telegram.ext import ContextTypes, ConversationHandler
 
 (
@@ -529,17 +529,15 @@ async def edit_choose_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Формируем строку для редактирования
     if place[1] == "Адреса":
         edit_str = f"{place[6] or ''}::{place[3] or ''}::{place[5] or ''}"
-        await send_and_track(
-            update, context,
+        await update.message.reply_text(
             f"Измените данные (имя::адрес::ссылка):\n{edit_str}",
-            reply_markup=ReplyKeyboardMarkup(with_back([]), resize_keyboard=True)
+            reply_markup=ForceReply(selective=False)
         )
     else:
         edit_str = f"{place[3] or ''}::{place[4] or ''}::{place[5] or ''}"
-        await send_and_track(
-            update, context,
+        await update.message.reply_text(
             f"Измените данные (название::адрес::ссылка):\n{edit_str}",
-            reply_markup=ReplyKeyboardMarkup(with_back([]), resize_keyboard=True)
+            reply_markup=ForceReply(selective=False)
         )
     context.user_data["edit_prev"] = edit_str
     return EDIT_INPUT
@@ -566,9 +564,9 @@ async def edit_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if place[1] == "Адреса":
         parts = text.split("::")
         if len(parts) < 2:
-            await send_and_track(
-                update, context, "Введите в формате: имя::адрес::ссылка",
-                reply_markup=ReplyKeyboardMarkup(with_back([]), resize_keyboard=True)
+            await update.message.reply_text(
+                "Введите в формате: имя::адрес::ссылка",
+                reply_markup=ForceReply(selective=False)
             )
             return EDIT_INPUT
         name, address = parts[0], parts[1]
@@ -578,9 +576,9 @@ async def edit_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         parts = text.split("::")
         if len(parts) < 1:
-            await send_and_track(
-                update, context, "Введите в формате: название::адрес::ссылка",
-                reply_markup=ReplyKeyboardMarkup(with_back([]), resize_keyboard=True)
+            await update.message.reply_text(
+                "Введите в формате: название::адрес::ссылка",
+                reply_markup=ForceReply(selective=False)
             )
             return EDIT_INPUT
         name = parts[0]
