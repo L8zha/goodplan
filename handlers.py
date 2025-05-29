@@ -79,9 +79,13 @@ def clear_all():
     conn.close()
 
 EXIT_BUTTON = [["Выход"]]
+BACK_BUTTON = [["Назад"]]
 
 def with_exit(keyboard):
     return keyboard + EXIT_BUTTON
+
+def with_back(keyboard):
+    return keyboard + BACK_BUTTON
 
 async def send_and_track(update, context, *args, **kwargs):
     sent = await update.message.reply_text(*args, **kwargs)
@@ -93,7 +97,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_and_track(
         update, context,
         "Выберите действие:",
-        reply_markup=ReplyKeyboardMarkup(with_exit([["Просмотр", "Добавление", "Редактирование"]]), resize_keyboard=True)
+        reply_markup=ReplyKeyboardMarkup([["Просмотр", "Добавление", "Редактирование"], ["Выход"]], resize_keyboard=True)
     )
     return MAIN_MENU
 
@@ -112,42 +116,74 @@ async def exit_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return ConversationHandler.END
 
-async def on_start_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # этот обработчик больше не нужен, теперь сразу меню из start()
-    pass
+# ------------------------ BACK HANDLERS --------------------
+
+async def back_to_main(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    return await start(update, context)
+
+async def back_to_add(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await send_and_track(
+        update, context,
+        "Что добавить?",
+        reply_markup=ReplyKeyboardMarkup(with_back([CATEGORIES]), resize_keyboard=True)
+    )
+    return ADD_CATEGORY
+
+async def back_to_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await send_and_track(
+        update, context,
+        "Что посмотреть?",
+        reply_markup=ReplyKeyboardMarkup(with_back([CATEGORIES]), resize_keyboard=True)
+    )
+    return VIEW_CATEGORY
+
+async def back_to_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await send_and_track(
+        update, context,
+        "Что редактировать?",
+        reply_markup=ReplyKeyboardMarkup(with_back([CATEGORIES]), resize_keyboard=True)
+    )
+    return EDIT_CATEGORY
+
+# ------------------------ ADD -----------------------------
 
 async def to_add_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_and_track(
         update, context,
         "Что добавить?",
-        reply_markup=ReplyKeyboardMarkup(with_exit([CATEGORIES]), resize_keyboard=True)
+        reply_markup=ReplyKeyboardMarkup(with_back([CATEGORIES]), resize_keyboard=True)
     )
     return ADD_CATEGORY
 
 async def add_category(update: Update, context: ContextTypes.DEFAULT_TYPE):
     cat = update.message.text
+    if cat == "Назад":
+        return await back_to_main(update, context)
     context.user_data["add_category"] = cat
     if cat == "Еда":
         await send_and_track(
             update, context,
             "Тип еды:",
-            reply_markup=ReplyKeyboardMarkup(with_exit([FOOD_TYPES]), resize_keyboard=True)
+            reply_markup=ReplyKeyboardMarkup(with_back([FOOD_TYPES]), resize_keyboard=True)
         )
         return ADD_FOOD_TYPE
     elif cat == "Развлечения":
         context.user_data["add_subcat"] = None
         await send_and_track(
-            update, context, "Название заведения и/или адрес:"
+            update, context, "Название заведения и/или адрес:",
+            reply_markup=ReplyKeyboardMarkup(with_back([]), resize_keyboard=True)
         )
         return ADD_FUN_PLACE_NAME
     elif cat == "Отели":
         await send_and_track(
-            update, context, "Название отеля:"
+            update, context, "Название отеля:",
+            reply_markup=ReplyKeyboardMarkup(with_back([]), resize_keyboard=True)
         )
         return ADD_HOTEL_NAME
     elif cat == "Адреса":
         await send_and_track(
-            update, context, "Имя:"
+            update, context, "Имя:",
+            reply_markup=ReplyKeyboardMarkup(with_back([]), resize_keyboard=True)
         )
         return ADD_ADDRESS_NAME
     else:
@@ -155,21 +191,29 @@ async def add_category(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def add_food_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
     typ = update.message.text
+    if typ == "Назад":
+        return await to_add_menu(update, context)
     context.user_data["add_subcat"] = typ
     await send_and_track(
-        update, context, "Название заведения и/или адрес:"
+        update, context, "Название заведения и/или адрес:",
+        reply_markup=ReplyKeyboardMarkup(with_back([]), resize_keyboard=True)
     )
     return ADD_PLACE_NAME
 
 async def add_food_place_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.text == "Назад":
+        return await add_category(update, context)
     context.user_data["add_name"] = update.message.text
     context.user_data["add_address"] = ""
     await send_and_track(
-        update, context, "Ссылка на карты (или 'Пропустить'):", reply_markup=ReplyKeyboardMarkup(with_exit([["Пропустить"]]), resize_keyboard=True)
+        update, context, "Ссылка на карты (или 'Пропустить'):",
+        reply_markup=ReplyKeyboardMarkup(with_back([["Пропустить"]]), resize_keyboard=True)
     )
     return ADD_PLACE_MAP
 
 async def add_food_place_map(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.text == "Назад":
+        return await add_food_place_name(update, context)
     if update.message.text == "Пропустить":
         map_url = ""
     else:
@@ -177,23 +221,28 @@ async def add_food_place_map(update: Update, context: ContextTypes.DEFAULT_TYPE)
     cat = context.user_data["add_category"]
     subcat = context.user_data["add_subcat"]
     name = context.user_data["add_name"]
-    address = ""  # адреса нет отдельно
+    address = ""
     save_place(cat, subcat, name, address, map_url)
     await send_and_track(
         update, context, "Добавлено!",
-        reply_markup=ReplyKeyboardMarkup(with_exit([["Просмотр", "Добавление", "Редактирование"]]), resize_keyboard=True)
+        reply_markup=ReplyKeyboardMarkup([["Просмотр", "Добавление", "Редактирование"], ["Выход"]], resize_keyboard=True)
     )
     return MAIN_MENU
 
 async def add_fun_place_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.text == "Назад":
+        return await add_category(update, context)
     context.user_data["add_name"] = update.message.text
     context.user_data["add_address"] = ""
     await send_and_track(
-        update, context, "Ссылка на карты (или 'Пропустить'):", reply_markup=ReplyKeyboardMarkup(with_exit([["Пропустить"]]), resize_keyboard=True)
+        update, context, "Ссылка на карты (или 'Пропустить'):",
+        reply_markup=ReplyKeyboardMarkup(with_back([["Пропустить"]]), resize_keyboard=True)
     )
     return ADD_FUN_PLACE_MAP
 
 async def add_fun_place_map(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.text == "Назад":
+        return await add_fun_place_name(update, context)
     if update.message.text == "Пропустить":
         map_url = ""
     else:
@@ -201,25 +250,33 @@ async def add_fun_place_map(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_place("Развлечения", None, context.user_data["add_name"], "", map_url)
     await send_and_track(
         update, context, "Добавлено!",
-        reply_markup=ReplyKeyboardMarkup(with_exit([["Просмотр", "Добавление", "Редактирование"]]), resize_keyboard=True)
+        reply_markup=ReplyKeyboardMarkup([["Просмотр", "Добавление", "Редактирование"], ["Выход"]], resize_keyboard=True)
     )
     return MAIN_MENU
 
 async def add_hotel_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.text == "Назад":
+        return await add_category(update, context)
     context.user_data["add_name"] = update.message.text
     await send_and_track(
-        update, context, "Адрес:"
+        update, context, "Адрес:",
+        reply_markup=ReplyKeyboardMarkup(with_back([]), resize_keyboard=True)
     )
     return ADD_HOTEL_ADDRESS
 
 async def add_hotel_address(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.text == "Назад":
+        return await add_hotel_name(update, context)
     context.user_data["add_address"] = update.message.text
     await send_and_track(
-        update, context, "Ссылка на карты (или 'Пропустить'):", reply_markup=ReplyKeyboardMarkup(with_exit([["Пропустить"]]), resize_keyboard=True)
+        update, context, "Ссылка на карты (или 'Пропустить'):",
+        reply_markup=ReplyKeyboardMarkup(with_back([["Пропустить"]]), resize_keyboard=True)
     )
     return ADD_HOTEL_MAP
 
 async def add_hotel_map(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.text == "Назад":
+        return await add_hotel_address(update, context)
     if update.message.text == "Пропустить":
         map_url = ""
     else:
@@ -227,25 +284,33 @@ async def add_hotel_map(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_place("Отели", None, context.user_data["add_name"], context.user_data["add_address"], map_url)
     await send_and_track(
         update, context, "Добавлено!",
-        reply_markup=ReplyKeyboardMarkup(with_exit([["Просмотр", "Добавление", "Редактирование"]]), resize_keyboard=True)
+        reply_markup=ReplyKeyboardMarkup([["Просмотр", "Добавление", "Редактирование"], ["Выход"]], resize_keyboard=True)
     )
     return MAIN_MENU
 
 async def add_address_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.text == "Назад":
+        return await add_category(update, context)
     context.user_data["person"] = update.message.text
     await send_and_track(
-        update, context, "Адрес:"
+        update, context, "Адрес:",
+        reply_markup=ReplyKeyboardMarkup(with_back([]), resize_keyboard=True)
     )
     return ADD_ADDRESS_ADR
 
 async def add_address_adr(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.text == "Назад":
+        return await add_address_name(update, context)
     context.user_data["add_address"] = update.message.text
     await send_and_track(
-        update, context, "Ссылка на карты (или 'Пропустить'):", reply_markup=ReplyKeyboardMarkup(with_exit([["Пропустить"]]), resize_keyboard=True)
+        update, context, "Ссылка на карты (или 'Пропустить'):",
+        reply_markup=ReplyKeyboardMarkup(with_back([["Пропустить"]]), resize_keyboard=True)
     )
     return ADD_ADDRESS_MAP
 
 async def add_address_map(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.text == "Назад":
+        return await add_address_adr(update, context)
     if update.message.text == "Пропустить":
         map_url = ""
     else:
@@ -253,205 +318,257 @@ async def add_address_map(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_place("Адреса", None, "", context.user_data["add_address"], map_url, context.user_data["person"])
     await send_and_track(
         update, context, "Добавлено!",
-        reply_markup=ReplyKeyboardMarkup(with_exit([["Просмотр", "Добавление", "Редактирование"]]), resize_keyboard=True)
+        reply_markup=ReplyKeyboardMarkup([["Просмотр", "Добавление", "Редактирование"], ["Выход"]], resize_keyboard=True)
     )
     return MAIN_MENU
+
+# --------------------- VIEW ------------------------------
 
 async def to_view_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_and_track(
         update, context,
         "Что посмотреть?",
-        reply_markup=ReplyKeyboardMarkup(with_exit([CATEGORIES]), resize_keyboard=True)
+        reply_markup=ReplyKeyboardMarkup(with_back([CATEGORIES]), resize_keyboard=True)
     )
     return VIEW_CATEGORY
 
 async def view_category(update: Update, context: ContextTypes.DEFAULT_TYPE):
     cat = update.message.text
+    if cat == "Назад":
+        return await back_to_main(update, context)
     context.user_data["view_category"] = cat
     if cat == "Еда":
         await send_and_track(
-            update, context, "Тип еды:", reply_markup=ReplyKeyboardMarkup(with_exit([FOOD_TYPES]), resize_keyboard=True)
+            update, context, "Тип еды:", reply_markup=ReplyKeyboardMarkup(with_back([FOOD_TYPES]), resize_keyboard=True)
         )
         return VIEW_FOOD_TYPE
     elif cat == "Развлечения":
         rows = get_places("Развлечения")
         if not rows:
             await send_and_track(
-                update, context, "Ничего не найдено.", reply_markup=ReplyKeyboardMarkup(with_exit([CATEGORIES]), resize_keyboard=True)
+                update, context, "Ничего не найдено.", reply_markup=ReplyKeyboardMarkup(with_back([CATEGORIES]), resize_keyboard=True)
             )
             return VIEW_CATEGORY
-        txt = "\n".join([f"{r[1]}{'' if not r[2] else ' ('+r[2]+')'}{'' if not r[3] else ' — '+r[3]}" for r in rows])
-        await send_and_track(
-            update, context, txt, reply_markup=ReplyKeyboardMarkup(with_exit([CATEGORIES]), resize_keyboard=True)
-        )
+        for r in rows:
+            fields = []
+            if r[1]:
+                fields.append(f"(!)Адрес или название: {r[1]}")
+            if r[3]:
+                fields.append(f"(!)Ссылка на карты: {r[3]}")
+            await send_and_track(
+                update, context, "\n".join(fields), reply_markup=ReplyKeyboardMarkup(with_back([CATEGORIES]), resize_keyboard=True)
+            )
         return VIEW_CATEGORY
     elif cat == "Отели":
         rows = get_places("Отели")
         if not rows:
             await send_and_track(
-                update, context, "Ничего не найдено.", reply_markup=ReplyKeyboardMarkup(with_exit([CATEGORIES]), resize_keyboard=True)
+                update, context, "Ничего не найдено.", reply_markup=ReplyKeyboardMarkup(with_back([CATEGORIES]), resize_keyboard=True)
             )
             return VIEW_CATEGORY
-        txt = "\n".join([f"{r[1]}{'' if not r[2] else ' ('+r[2]+')'}{'' if not r[3] else ' — '+r[3]}" for r in rows])
-        await send_and_track(
-            update, context, txt, reply_markup=ReplyKeyboardMarkup(with_exit([CATEGORIES]), resize_keyboard=True)
-        )
+        for r in rows:
+            fields = []
+            if r[1]:
+                fields.append(f"(!)Адрес или название: {r[1]}")
+            if r[3]:
+                fields.append(f"(!)Ссылка на карты: {r[3]}")
+            await send_and_track(
+                update, context, "\n".join(fields), reply_markup=ReplyKeyboardMarkup(with_back([CATEGORIES]), resize_keyboard=True)
+            )
         return VIEW_CATEGORY
     elif cat == "Адреса":
         people = get_people_with_addresses()
         if not people:
             await send_and_track(
-                update, context, "Ничего не найдено.", reply_markup=ReplyKeyboardMarkup(with_exit([CATEGORIES]), resize_keyboard=True)
+                update, context, "Ничего не найдено.", reply_markup=ReplyKeyboardMarkup(with_back([CATEGORIES]), resize_keyboard=True)
             )
             return VIEW_CATEGORY
         await send_and_track(
-            update, context, "Кто?", reply_markup=ReplyKeyboardMarkup(with_exit([[p] for p in people]), resize_keyboard=True)
+            update, context, "Кто?", reply_markup=ReplyKeyboardMarkup(with_back([[p] for p in people]), resize_keyboard=True)
         )
         return VIEW_ADDRESS_PEOPLE
 
 async def view_food_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
     subcat = update.message.text
+    if subcat == "Назад":
+        return await view_category(update, context)
     rows = get_places("Еда", subcat)
     if not rows:
         await send_and_track(
-            update, context, "Ничего не найдено.", reply_markup=ReplyKeyboardMarkup(with_exit([FOOD_TYPES]), resize_keyboard=True)
+            update, context, "Ничего не найдено.", reply_markup=ReplyKeyboardMarkup(with_back([FOOD_TYPES]), resize_keyboard=True)
         )
         return VIEW_FOOD_TYPE
-    txt = "\n".join([f"{r[1]}{'' if not r[2] else ' ('+r[2]+')'}{'' if not r[3] else ' — '+r[3]}" for r in rows])
-    await send_and_track(
-        update, context, txt, reply_markup=ReplyKeyboardMarkup(with_exit([FOOD_TYPES]), resize_keyboard=True)
-    )
+    for r in rows:
+        fields = []
+        if r[1]:
+            fields.append(f"(!)Адрес или название: {r[1]}")
+        if r[3]:
+            fields.append(f"(!)Ссылка на карты: {r[3]}")
+        await send_and_track(
+            update, context, "\n".join(fields), reply_markup=ReplyKeyboardMarkup(with_back([FOOD_TYPES]), resize_keyboard=True)
+        )
     return VIEW_FOOD_TYPE
 
 async def view_address_people(update: Update, context: ContextTypes.DEFAULT_TYPE):
     person = update.message.text
+    if person == "Назад":
+        return await view_category(update, context)
     info = get_address_by_person(person)
     if not info:
         await send_and_track(
-            update, context, "Нет информации.", reply_markup=ReplyKeyboardMarkup(with_exit([CATEGORIES]), resize_keyboard=True)
+            update, context, "Нет информации.", reply_markup=ReplyKeyboardMarkup(with_back([CATEGORIES]), resize_keyboard=True)
         )
         return VIEW_CATEGORY
-    txt = f"{person}:\nАдрес: {info[1]}\n{'Ссылка: '+info[2] if info[2] else ''}"
+    fields = []
+    if info[0]:
+        fields.append(f"(!)Адрес или название: {info[0]}")
+    if info[2]:
+        fields.append(f"(!)Ссылка на карты: {info[2]}")
     await send_and_track(
-        update, context, txt, reply_markup=ReplyKeyboardMarkup(with_exit([[person]]), resize_keyboard=True)
+        update, context, "\n".join(fields), reply_markup=ReplyKeyboardMarkup(with_back([[person]]), resize_keyboard=True)
     )
     return VIEW_ADDRESS_PERSON
+
+# ------------------------ EDIT -----------------------------
 
 async def to_edit_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_and_track(
         update, context,
         "Что редактировать?",
-        reply_markup=ReplyKeyboardMarkup(with_exit([CATEGORIES]), resize_keyboard=True)
+        reply_markup=ReplyKeyboardMarkup(with_back([CATEGORIES]), resize_keyboard=True)
     )
     return EDIT_CATEGORY
 
 async def edit_category(update: Update, context: ContextTypes.DEFAULT_TYPE):
     cat = update.message.text
+    if cat == "Назад":
+        return await back_to_main(update, context)
     context.user_data["edit_category"] = cat
     if cat == "Еда":
         await send_and_track(
-            update, context, "Тип еды:", reply_markup=ReplyKeyboardMarkup(with_exit([FOOD_TYPES]), resize_keyboard=True)
+            update, context, "Тип еды:", reply_markup=ReplyKeyboardMarkup(with_back([FOOD_TYPES]), resize_keyboard=True)
         )
         return EDIT_FOOD_TYPE
     elif cat == "Развлечения":
         rows = get_places("Развлечения")
         if not rows:
             await send_and_track(
-                update, context, "Ничего не найдено.", reply_markup=ReplyKeyboardMarkup(with_exit([CATEGORIES]), resize_keyboard=True)
+                update, context, "Ничего не найдено.", reply_markup=ReplyKeyboardMarkup(with_back([CATEGORIES]), resize_keyboard=True)
             )
             return EDIT_CATEGORY
         context.user_data["edit_rows"] = rows
         txt = "\n".join([f"{i+1}. {r[1]}" for i, r in enumerate(rows)])
         await send_and_track(
-            update, context, txt + "\nВведите номер для редактирования:"
+            update, context, txt + "\nВведите номер для редактирования:",
+            reply_markup=ReplyKeyboardMarkup(with_back([[str(i+1)] for i in range(len(rows))]), resize_keyboard=True)
         )
         return EDIT_CHOOSE_ITEM
     elif cat == "Отели":
         rows = get_places("Отели")
         if not rows:
             await send_and_track(
-                update, context, "Ничего не найдено.", reply_markup=ReplyKeyboardMarkup(with_exit([CATEGORIES]), resize_keyboard=True)
+                update, context, "Ничего не найдено.", reply_markup=ReplyKeyboardMarkup(with_back([CATEGORIES]), resize_keyboard=True)
             )
             return EDIT_CATEGORY
         context.user_data["edit_rows"] = rows
         txt = "\n".join([f"{i+1}. {r[1]}" for i, r in enumerate(rows)])
         await send_and_track(
-            update, context, txt + "\nВведите номер для редактирования:"
+            update, context, txt + "\nВведите номер для редактирования:",
+            reply_markup=ReplyKeyboardMarkup(with_back([[str(i+1)] for i in range(len(rows))]), resize_keyboard=True)
         )
         return EDIT_CHOOSE_ITEM
     elif cat == "Адреса":
         rows = get_places("Адреса")
         if not rows:
             await send_and_track(
-                update, context, "Ничего не найдено.", reply_markup=ReplyKeyboardMarkup(with_exit([CATEGORIES]), resize_keyboard=True)
+                update, context, "Ничего не найдено.", reply_markup=ReplyKeyboardMarkup(with_back([CATEGORIES]), resize_keyboard=True)
             )
             return EDIT_CATEGORY
         context.user_data["edit_rows"] = rows
         txt = "\n".join([f"{i+1}. {r[4]}" for i, r in enumerate(rows)])
         await send_and_track(
-            update, context, txt + "\nВведите номер для редактирования:"
+            update, context, txt + "\nВведите номер для редактирования:",
+            reply_markup=ReplyKeyboardMarkup(with_back([[str(i+1)] for i in range(len(rows))]), resize_keyboard=True)
         )
         return EDIT_CHOOSE_ITEM
 
 async def edit_food_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
     subcat = update.message.text
+    if subcat == "Назад":
+        return await edit_category(update, context)
     rows = get_places("Еда", subcat)
     if not rows:
         await send_and_track(
-            update, context, "Ничего не найдено.", reply_markup=ReplyKeyboardMarkup(with_exit([FOOD_TYPES]), resize_keyboard=True)
+            update, context, "Ничего не найдено.", reply_markup=ReplyKeyboardMarkup(with_back([FOOD_TYPES]), resize_keyboard=True)
         )
         return EDIT_FOOD_TYPE
     context.user_data["edit_rows"] = rows
     txt = "\n".join([f"{i+1}. {r[1]}" for i, r in enumerate(rows)])
     await send_and_track(
-        update, context, txt + "\nВведите номер для редактирования:"
+        update, context, txt + "\nВведите номер для редактирования:",
+        reply_markup=ReplyKeyboardMarkup(with_back([[str(i+1)] for i in range(len(rows))]), resize_keyboard=True)
     )
     return EDIT_CHOOSE_ITEM
 
 async def edit_choose_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text == "Назад":
+        return await edit_category(update, context)
     try:
-        num = int(update.message.text) - 1
+        num = int(text) - 1
         row = context.user_data["edit_rows"][num]
     except (ValueError, IndexError):
         await send_and_track(
-            update, context, "Некорректный номер. Попробуйте ещё раз."
+            update, context, "Некорректный номер. Попробуйте ещё раз.",
+            reply_markup=ReplyKeyboardMarkup(with_back([[str(i+1)] for i in range(len(context.user_data['edit_rows']))]), resize_keyboard=True)
         )
         return EDIT_CHOOSE_ITEM
     place_id = row[0]
     context.user_data["edit_place_id"] = place_id
     place = get_place_by_id(place_id)
-    # сразу отправляем в поле ввода для редактирования
+    # Формируем строку для редактирования
     if place[1] == "Адреса":
+        edit_str = f"{place[6] or ''}::{place[3] or ''}::{place[5] or ''}"
         await send_and_track(
             update, context,
-            f"Редактируйте (имя::адрес::ссылка):\n{place[6]}::{place[3]}::{place[5]}"
+            f"Измените данные (имя::адрес::ссылка):\n{edit_str}",
+            reply_markup=ReplyKeyboardMarkup(with_back([]), resize_keyboard=True)
         )
     else:
+        edit_str = f"{place[3] or ''}::{place[4] or ''}::{place[5] or ''}"
         await send_and_track(
             update, context,
-            f"Редактируйте (название::адрес::ссылка):\n{place[3]}::{place[4]}::{place[5]}"
+            f"Измените данные (название::адрес::ссылка):\n{edit_str}",
+            reply_markup=ReplyKeyboardMarkup(with_back([]), resize_keyboard=True)
         )
+    context.user_data["edit_prev"] = edit_str
     return EDIT_INPUT
 
 async def edit_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
+    if text == "Назад":
+        # Назад возвращает к выбору номера
+        return await edit_choose_item(update, context)
     place_id = context.user_data.get("edit_place_id")
     if not place_id:
         await send_and_track(
-            update, context, "Ошибка. Попробуйте заново.", reply_markup=ReplyKeyboardMarkup(with_exit([CATEGORIES]), resize_keyboard=True)
+            update, context, "Ошибка. Попробуйте заново.", reply_markup=ReplyKeyboardMarkup(with_back([CATEGORIES]), resize_keyboard=True)
         )
         return EDIT_CATEGORY
-    if text == "Сохранить":
+    prev = context.user_data.get("edit_prev", "")
+    if text == prev:
+        # ничего не изменилось
         await send_and_track(
-            update, context, "Сначала отредактируйте данные и отправьте их."
+            update, context, "Данные не изменены.", reply_markup=ReplyKeyboardMarkup(with_back([CATEGORIES]), resize_keyboard=True)
         )
-        return EDIT_INPUT
+        return EDIT_CATEGORY
     place = get_place_by_id(place_id)
     if place[1] == "Адреса":
         parts = text.split("::")
         if len(parts) < 2:
             await send_and_track(
-                update, context, "Введите в формате: имя::адрес::ссылка"
+                update, context, "Введите в формате: имя::адрес::ссылка",
+                reply_markup=ReplyKeyboardMarkup(with_back([]), resize_keyboard=True)
             )
             return EDIT_INPUT
         name, address = parts[0], parts[1]
@@ -462,7 +579,8 @@ async def edit_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parts = text.split("::")
         if len(parts) < 1:
             await send_and_track(
-                update, context, "Введите в формате: название::адрес::ссылка"
+                update, context, "Введите в формате: название::адрес::ссылка",
+                reply_markup=ReplyKeyboardMarkup(with_back([]), resize_keyboard=True)
             )
             return EDIT_INPUT
         name = parts[0]
@@ -470,6 +588,6 @@ async def edit_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         map_url = parts[2] if len(parts) > 2 else ""
         update_place(place_id, name, address, map_url, None)
     await send_and_track(
-        update, context, "Сохранено!", reply_markup=ReplyKeyboardMarkup(with_exit([CATEGORIES]), resize_keyboard=True)
+        update, context, "Сохранено!", reply_markup=ReplyKeyboardMarkup(with_back([CATEGORIES]), resize_keyboard=True)
     )
     return EDIT_CATEGORY
