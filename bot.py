@@ -1,3 +1,4 @@
+import os
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -14,6 +15,7 @@ from handlers import (
     to_edit_menu, edit_category, edit_food_type, edit_choose_item, edit_input,
     back_to_main, to_add_menu, add_category, add_food_type, add_food_place_name, add_fun_place_name, add_hotel_name, add_address_name,
 )
+from dotenv import load_dotenv
 
 (
     START, MAIN_MENU, ADD_CATEGORY, ADD_FOOD_TYPE,
@@ -25,7 +27,12 @@ from handlers import (
 ) = range(22)
 
 def main():
-    application = ApplicationBuilder().token("7178929219:AAFXr4KOlPUUHBYxXTnTzF5iNG7t2s4AIM0").build()
+    load_dotenv()  # Загрузка переменных из .env
+    token = os.getenv("BOT_TOKEN")
+    if not token:
+        raise RuntimeError("BOT_TOKEN is not set in .env file!")
+
+    application = ApplicationBuilder().token(token).build()
 
     conv_handler = ConversationHandler(
         entry_points=[
@@ -38,8 +45,6 @@ def main():
                 MessageHandler(filters.Regex("^Редактирование$"), to_edit_menu),
                 MessageHandler(filters.Regex("^Выход$"), exit_handler),
             ],
-
-            # ADD section
             ADD_CATEGORY: [
                 MessageHandler(filters.Regex("^Назад$"), back_to_main),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, add_category),
@@ -88,8 +93,6 @@ def main():
                 MessageHandler(filters.Regex("^Назад$"), add_address_adr),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, add_address_map),
             ],
-
-            # VIEW section
             VIEW_CATEGORY: [
                 MessageHandler(filters.Regex("^Назад$"), back_to_main),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, view_category),
@@ -104,10 +107,8 @@ def main():
             ],
             VIEW_ADDRESS_PERSON: [
                 MessageHandler(filters.Regex("^Назад$"), view_category),
-                MessageHandler(filters.TEXT & ~filters.COMMAND, view_address_people),  # или другой обработчик
+                MessageHandler(filters.TEXT & ~filters.COMMAND, view_address_people),
             ],
-
-            # EDIT section
             EDIT_CATEGORY: [
                 MessageHandler(filters.Regex("^Назад$"), back_to_main),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, edit_category),
