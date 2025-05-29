@@ -27,10 +27,6 @@ def main():
             MessageHandler(filters.Regex("^Выход$"), exit_handler),
         ],
         states={
-            START: [
-                MessageHandler(filters.Regex("^Старт$"), on_start_button),
-                MessageHandler(filters.Regex("^Выход$"), exit_handler),
-            ],
             MAIN_MENU: [
                 MessageHandler(filters.Regex("^Добавление$"), to_add_menu),
                 MessageHandler(filters.Regex("^Просмотр$"), to_view_menu),
