@@ -116,7 +116,7 @@ async def exit_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return ConversationHandler.END
 
-# ------------------------ BACK HANDLERS --------------------
+# ----------- BACK HANDLERS ------------
 
 async def back_to_main(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return await start(update, context)
@@ -145,7 +145,7 @@ async def back_to_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return EDIT_CATEGORY
 
-# ------------------------ ADD -----------------------------
+# ------------- ADD -------------------
 
 async def to_add_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_and_track(
@@ -548,7 +548,7 @@ async def edit_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     if text == "Назад":
         # Назад возвращает к выбору номера
-        return await edit_choose_item(update, context)
+        return await edit_category(update, context)
     place_id = context.user_data.get("edit_place_id")
     if not place_id:
         await send_and_track(
